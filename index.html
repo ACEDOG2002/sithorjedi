@@ -6,7 +6,6 @@
     <title>Sith vs Jedi: Global War</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* --- STYLING (Hyperspace + Explosion) --- */
         body {
             margin: 0; padding: 0; min-height: 100vh; color: white;
             font-family: 'Segoe UI', sans-serif; display: flex;
@@ -36,10 +35,11 @@
             width: 100%; padding: 15px; margin-top: 15px; border: none; border-radius: 8px; 
             font-weight: bold; cursor: pointer; text-transform: uppercase; color: white;
         }
-        .btn-jedi { background: #2e67f8; } .btn-sith { background: #f82e2e; }
-        .count { font-size: 3rem; font-weight: bold; font-family: monospace; margin-top: 10px; }
+        .btn-jedi { background: #2e67f8; } 
+        .btn-sith { background: #f82e2e; }
+        
+        .count { font-size: 3.5rem; font-weight: bold; font-family: monospace; margin-top: 10px; color: #ffe81f; }
 
-        /* QR FOOTER */
         .footer { margin-top: auto; padding: 40px; text-align: center; width: 100%; background: rgba(0,0,0,0.85); border-top: 2px solid #ffe81f; }
         .qr-explosion { 
             display: inline-block; padding: 10px; background: white; border-radius: 10px; 
@@ -51,68 +51,66 @@
 </head>
 <body>
 
-    <h1>Choose your side & scroll down</h1>
+    <h1>Global Force Balance</h1>
 
     <div class="main-stage">
         <div class="card jedi-card">
             <img src="Anakin_Skywalker_RotS.webp" class="profile">
             <h2>Jedi Order</h2>
-            <button class="btn-jedi" onclick="castVote('jedi')">Light Side</button>
-            <div id="jedi-count" class="count">...</div>
+            <button class="btn-jedi" onclick="castGlobalVote('jedi')">Light Side</button>
+            <div id="jedi-count" class="count">0</div>
         </div>
 
         <div class="card sith-card">
             <img src="darth maul.webp" class="profile">
             <h2>Sith Lords</h2>
-            <button class="btn-sith" onclick="castVote('sith')">Dark Side</button>
-            <div id="sith-count" class="count">...</div>
+            <button class="btn-sith" onclick="castGlobalVote('sith')">Dark Side</button>
+            <div id="sith-count" class="count">0</div>
         </div>
     </div>
 
     <div class="footer">
-        <p style="color:#ffe81f; font-weight:bold; letter-spacing:2px;">SCAN TO JOIN THE COUNCIL</p>
+        <p style="color:#ffe81f; font-weight:bold; letter-spacing:2px; margin-bottom:15px;">SCAN TO JOIN THE COUNCIL</p>
         <div class="qr-explosion">
             <img src="council.png" alt="QR Code">
         </div>
     </div>
 
     <script>
-        // --- SUPABASE CONFIG ---
-        const _supabaseUrl = 'YOUR_SUPABASE_URL';
-        const _supabaseKey = 'YOUR_SUPABASE_ANON_KEY';
-        const supabase = supabase.createClient(_supabaseUrl, _supabaseKey);
+        // REPLACE THESE with your actual Supabase project details
+        const SUPABASE_URL = 'https://your-project-url.supabase.co';
+        const SUPABASE_KEY = 'your-anon-public-key';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // 1. Fetch Global Votes
-        async function fetchVotes() {
-            const { data, error } = await supabase.from('votes').select('*');
+        // 1. Initial Load: Fetch votes from the cloud
+        async function loadVotes() {
+            const { data, error } = await supabaseClient.from('votes').select('*');
             if (data) {
                 data.forEach(row => {
-                    document.getElementById(`${row.side}-count`).innerText = row.count;
+                    const el = document.getElementById(`${row.side}-count`);
+                    if (el) el.innerText = row.count;
                 });
             }
         }
 
-        // 2. Cast Global Vote
-        async function castVote(side) {
-            // Optimistic update (optional UI feedback)
-            const el = document.getElementById(`${side}-count`);
-            el.innerText = parseInt(el.innerText) + 1;
-
-            // Call the SQL function we created in Supabase
-            await supabase.rpc('increment_vote', { row_side: side });
+        // 2. Voting: Send the update to the cloud
+        async function castGlobalVote(side) {
+            // Using an RPC (Remote Procedure Call) is the safest way to increment numbers
+            const { error } = await supabaseClient.rpc('increment_vote', { row_side: side });
+            if (error) console.error("Error voting:", error);
         }
 
-        // 3. REAL-TIME SYNC
-        // This makes the numbers jump when anyone else in the world votes
-        supabase
-          .channel('schema-db-changes')
-          .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'votes' }, (payload) => {
-             fetchVotes();
-          })
-          .subscribe();
+        // 3. Realtime: Listen for changes from other voters
+        supabaseClient
+            .channel('public:votes')
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'votes' }, (payload) => {
+                const updatedRow = payload.new;
+                document.getElementById(`${updatedRow.side}-count`).innerText = updatedRow.count;
+            })
+            .subscribe();
 
-        // Initial Load
-        fetchVotes();
+        // Start the engine
+        loadVotes();
     </script>
 </body>
 </html>

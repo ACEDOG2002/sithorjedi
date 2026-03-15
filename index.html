@@ -3,180 +3,116 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sith vs Jedi: Hyperspace</title>
+    <title>Sith vs Jedi: Global War</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* --- 1. HYPERSPACE BACKGROUND --- */
+        /* --- STYLING (Hyperspace + Explosion) --- */
         body {
-            margin: 0;
-            padding: 0;
-            min-height: 100vh;
-            color: white;
-            font-family: 'Segoe UI', sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            background-color: #000;
-            overflow-x: hidden;
-            
-            /* Moving Starfield */
+            margin: 0; padding: 0; min-height: 100vh; color: white;
+            font-family: 'Segoe UI', sans-serif; display: flex;
+            flex-direction: column; align-items: center; background: #000;
             background-image: 
                 radial-gradient(white, rgba(255,255,255,.2) 2px, transparent 3px),
-                radial-gradient(white, rgba(255,255,255,.15) 1px, transparent 2px),
                 radial-gradient(white, rgba(255,255,255,.1) 2px, transparent 3px);
-            background-size: 550px 550px, 350px 350px, 250px 250px;
-            background-position: 0 0, 40px 60px, 130px 270px;
+            background-size: 550px 550px, 350px 350px;
             animation: hyperspace 8s linear infinite;
         }
-
-        @keyframes hyperspace {
-            from { background-position: 0 0, 40px 60px, 130px 270px; }
-            to { background-position: 550px 550px, 390px 410px, 380px 520px; }
+        @keyframes hyperspace { from { background-position: 0 0; } to { background-position: 550px 550px; } }
+        
+        h1 { color: #ffe81f; text-transform: uppercase; letter-spacing: 5px; text-shadow: 0 0 20px #ffe81f; margin-top: 40px; }
+        
+        .main-stage { display: flex; gap: 30px; justify-content: center; flex-wrap: wrap; margin: 30px 0; }
+        
+        .card { 
+            background: rgba(20, 20, 20, 0.9); border: 2px solid #444; 
+            border-radius: 20px; padding: 20px; width: 300px; text-align: center;
         }
-
-        /* --- 2. HEADER & CARDS --- */
-        h1 {
-            color: #ffe81f;
-            text-transform: uppercase;
-            letter-spacing: 5px;
-            margin: 40px 0;
-            text-shadow: 0 0 20px rgba(255, 232, 31, 0.8);
-            text-align: center;
-        }
-
-        .main-stage {
-            display: flex;
-            justify-content: center;
-            gap: 30px;
-            flex-wrap: wrap;
-            padding-bottom: 50px;
-        }
-
-        .card {
-            background: rgba(20, 20, 20, 0.9);
-            border: 2px solid #444;
-            border-radius: 20px;
-            padding: 20px;
-            width: 300px;
-            text-align: center;
-            transition: 0.4s;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
-        }
-
-        /* Side Glows */
         .jedi-card:hover { border-color: #2e67f8; box-shadow: 0 0 30px #2e67f8; }
         .sith-card:hover { border-color: #f82e2e; box-shadow: 0 0 30px #f82e2e; }
 
-        img.profile {
-            width: 100%;
-            height: 380px;
-            object-fit: cover;
-            border-radius: 10px;
+        img.profile { width: 100%; height: 380px; object-fit: cover; border-radius: 10px; }
+        
+        button { 
+            width: 100%; padding: 15px; margin-top: 15px; border: none; border-radius: 8px; 
+            font-weight: bold; cursor: pointer; text-transform: uppercase; color: white;
         }
+        .btn-jedi { background: #2e67f8; } .btn-sith { background: #f82e2e; }
+        .count { font-size: 3rem; font-weight: bold; font-family: monospace; margin-top: 10px; }
 
-        button {
-            width: 100%;
-            padding: 15px;
-            margin: 15px 0;
-            border: none;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-            text-transform: uppercase;
-            color: white;
+        /* QR FOOTER */
+        .footer { margin-top: auto; padding: 40px; text-align: center; width: 100%; background: rgba(0,0,0,0.85); border-top: 2px solid #ffe81f; }
+        .qr-explosion { 
+            display: inline-block; padding: 10px; background: white; border-radius: 10px; 
+            box-shadow: 0 0 30px #ffe81f; animation: explode 1.5s infinite alternate; 
         }
-
-        .btn-jedi { background: #2e67f8; }
-        .btn-sith { background: #f82e2e; }
-
-        .count { font-size: 3rem; font-weight: bold; font-family: monospace; }
-
-        /* --- 3. QR EXPLOSION FOOTER --- */
-        .footer {
-            margin-top: auto;
-            padding: 40px;
-            text-align: center;
-            width: 100%;
-            background: rgba(0,0,0,0.8);
-            border-top: 1px solid #ffe81f;
-        }
-
-        .footer p {
-            color: #ffe81f;
-            font-weight: bold;
-            letter-spacing: 2px;
-            margin-bottom: 20px;
-            text-shadow: 0 0 10px #ffe81f;
-        }
-
-        .qr-explosion {
-            display: inline-block;
-            position: relative;
-            padding: 10px;
-            background: white;
-            border-radius: 10px;
-            /* The Explosion Glow */
-            box-shadow: 0 0 20px #ffe81f, 0 0 40px #ffae00;
-            animation: pulse-explosion 1.5s infinite alternate;
-        }
-
-        .qr-explosion img {
-            width: 150px;
-            height: 150px;
-            display: block;
-        }
-
-        @keyframes pulse-explosion {
-            0% { transform: scale(1); box-shadow: 0 0 20px #ffe81f; }
-            100% { transform: scale(1.1); box-shadow: 0 0 50px #ffe81f, 0 0 80px #ffae00; }
-        }
+        .qr-explosion img { width: 150px; height: 150px; }
+        @keyframes explode { 0% { transform: scale(1); box-shadow: 0 0 20px #ffe81f; } 100% { transform: scale(1.1); box-shadow: 0 0 60px #ffe81f; } }
     </style>
 </head>
 <body>
 
-    <h1>Choose Your Alignment &
-        scroll down
-    </h1>
+    <h1>Choose your side & scroll down</h1>
 
     <div class="main-stage">
         <div class="card jedi-card">
-            <img src="Anakin_Skywalker_RotS.webp" alt="Anakin" class="profile">
+            <img src="Anakin_Skywalker_RotS.webp" class="profile">
             <h2>Jedi Order</h2>
             <button class="btn-jedi" onclick="castVote('jedi')">Light Side</button>
-            <div id="jedi-count" class="count">0</div>
+            <div id="jedi-count" class="count">...</div>
         </div>
 
         <div class="card sith-card">
-            <img src="darth maul.webp" alt="Darth Maul" class="profile">
+            <img src="darth maul.webp" class="profile">
             <h2>Sith Lords</h2>
             <button class="btn-sith" onclick="castVote('sith')">Dark Side</button>
-            <div id="sith-count" class="count">0</div>
+            <div id="sith-count" class="count">...</div>
         </div>
     </div>
 
     <div class="footer">
-        <p>SCAN TO JOIN THE COUNCIL</p>
+        <p style="color:#ffe81f; font-weight:bold; letter-spacing:2px;">SCAN TO JOIN THE COUNCIL</p>
         <div class="qr-explosion">
             <img src="council.png" alt="QR Code">
         </div>
     </div>
 
     <script>
-        // Use local memory to keep votes after refresh
-        let votes = JSON.parse(localStorage.getItem('forceVotes')) || { jedi: 0, sith: 0 };
+        // --- SUPABASE CONFIG ---
+        const _supabaseUrl = 'YOUR_SUPABASE_URL';
+        const _supabaseKey = 'YOUR_SUPABASE_ANON_KEY';
+        const supabase = supabase.createClient(_supabaseUrl, _supabaseKey);
 
-        function updateUI() {
-            document.getElementById('jedi-count').innerText = votes.jedi;
-            document.getElementById('sith-count').innerText = votes.sith;
+        // 1. Fetch Global Votes
+        async function fetchVotes() {
+            const { data, error } = await supabase.from('votes').select('*');
+            if (data) {
+                data.forEach(row => {
+                    document.getElementById(`${row.side}-count`).innerText = row.count;
+                });
+            }
         }
 
-        function castVote(side) {
-            votes[side]++;
-            localStorage.setItem('forceVotes', JSON.stringify(votes));
-            updateUI();
+        // 2. Cast Global Vote
+        async function castVote(side) {
+            // Optimistic update (optional UI feedback)
+            const el = document.getElementById(`${side}-count`);
+            el.innerText = parseInt(el.innerText) + 1;
+
+            // Call the SQL function we created in Supabase
+            await supabase.rpc('increment_vote', { row_side: side });
         }
 
-        // Initialize display on load
-        updateUI();
+        // 3. REAL-TIME SYNC
+        // This makes the numbers jump when anyone else in the world votes
+        supabase
+          .channel('schema-db-changes')
+          .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'votes' }, (payload) => {
+             fetchVotes();
+          })
+          .subscribe();
+
+        // Initial Load
+        fetchVotes();
     </script>
 </body>
 </html>
